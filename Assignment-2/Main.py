@@ -30,7 +30,7 @@ camera_position = glm.vec3(4, 3, 3)
 camera_target = glm.vec3(0, 0, 0)
 camera_up = glm.vec3(0, 1, 0)
 fov = 45.0
-aspect_ratio = 800 / 600  # Assuming a window size of 800x600
+aspect_ratio = 800 / 600
 near = 0.1
 far = 100.0
 
