@@ -43,6 +43,9 @@ def initialize(vertexshade, fragmentshade, vertdata):
 
 
     vertexData = numpy.array(vertdata, dtype=numpy.float32)
+    elements_per_vertex = 4
+    number_of_vertices = len(vertdata) // 2
+    vertex_count = number_of_vertices// elements_per_vertex
 
     # Core OpenGL requires that at least one OpenGL vertex array be bound
     VAO = GL.glGenVertexArrays(1)
@@ -62,7 +65,7 @@ def initialize(vertexshade, fragmentshade, vertdata):
                              None)
     # the last parameter is a pointer
     GL.glVertexAttribPointer(1, 4, GL.GL_FLOAT, GL.GL_FALSE, 0,
-                             ctypes.c_void_p(288))
+                             ctypes.c_void_p(number_of_vertices*ctypes.sizeof(ctypes.c_float)))
 
     GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
     GL.glBindVertexArray(0)

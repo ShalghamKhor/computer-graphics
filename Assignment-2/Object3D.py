@@ -1,17 +1,21 @@
+import ctypes
+
 import glm
+import numpy
 import numpy as np
 from OpenGL import GL
 
 class Object3D:
-    def __init__(self, vertices, colors, shaderProgram):
+    def __init__(self, vertices, shaderProgram):
         self.vertices = vertices
-        self.colors = colors
+        #self.colors = colors
         self.shaderProgram = shaderProgram
         self.modelMatrix = glm.mat4(1)
         self.initialize()
 
     def initialize(self):
         # Generate and bind VAO
+        vertex_color = len(self.vertices) // 2
         self.vao = GL.glGenVertexArrays(1)
         GL.glBindVertexArray(self.vao)
 
@@ -22,18 +26,13 @@ class Object3D:
 
         # Vertex attribute
         GL.glEnableVertexAttribArray(0)
-        GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
-
-        # Create VBO for colors
-        self.colorVBO = GL.glGenBuffers(1)
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.colorVBO)
-        GL.glBufferData(GL.GL_ARRAY_BUFFER, self.colors.nbytes, self.colors, GL.GL_STATIC_DRAW)
-
-        # Color attribute
         GL.glEnableVertexAttribArray(1)
-        GL.glVertexAttribPointer(1, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
+        GL.glVertexAttribPointer(0, 4, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
+        GL.glVertexAttribPointer(1, 4, GL.GL_FLOAT, GL.GL_FALSE, 0, ctypes.c_void_p(vertex_color * ctypes.sizeof(ctypes.c_float)))
+
 
         # Unbind VAO
+        GL.glGenBuffers(0)
         GL.glBindVertexArray(0)
 
     def transform(self, matrix):
@@ -44,11 +43,11 @@ class Object3D:
         GL.glBindVertexArray(self.vao)
 
         # Set the model matrix uniform
-        modelLoc = GL.glGetUniformLocation(self.shaderProgram, "model")
+        modelLoc = GL.glGetUniformLocation(self.shaderProgram, "uniform")
         GL.glUniformMatrix4fv(modelLoc, 1, GL.GL_FALSE, glm.value_ptr(self.modelMatrix))
 
         # Draw the object
-        GL.glDrawArrays(GL.GL_TRIANGLES, 0, len(self.vertices))
+        GL.glDrawArrays(GL.GL_TRIANGLES, 0, len(self.vertices)//2)
 
         GL.glBindVertexArray(0)
         GL.glUseProgram(0)

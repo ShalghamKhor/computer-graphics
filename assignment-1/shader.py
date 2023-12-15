@@ -37,7 +37,8 @@ def vertData():
         # Blue background rectangle (2 triangles)
         -0.55, -0.4, 0.0, 1.0,  # Bottom-left corner
         0.55, -0.4, 0.0, 1.0,  # Bottom-right corner
-        0.55, 0.4, 0.0, 1.0,  # Top-right corner
+        0.55, 0.4, 0.0, 1.0,
+        # Top-right corner
         -0.55, -0.4, 0.0, 1.0,  # Bottom-left corner
         0.55, 0.4, 0.0, 1.0,  # Top-right corner
         -0.55, 0.4, 0.0, 1.0,  # Top-left corner
