@@ -8,7 +8,6 @@ from OpenGL import GL
 class Object3D:
     def __init__(self, vertices, shaderProgram):
         self.vertices = vertices
-        #self.colors = colors
         self.shaderProgram = shaderProgram
         self.modelMatrix = glm.mat4(1)
         self.initialize()
@@ -28,26 +27,28 @@ class Object3D:
         GL.glEnableVertexAttribArray(0)
         GL.glEnableVertexAttribArray(1)
         GL.glVertexAttribPointer(0, 4, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
-        GL.glVertexAttribPointer(1, 4, GL.GL_FLOAT, GL.GL_FALSE, 0, ctypes.c_void_p(vertex_color * ctypes.sizeof(ctypes.c_float)))
+        GL.glVertexAttribPointer(1, 4, GL.GL_FLOAT, GL.GL_FALSE, 0, ctypes.c_void_p(576))
 
 
         # Unbind VAO
-        GL.glGenBuffers(0)
         GL.glBindVertexArray(0)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+
 
     def transform(self, matrix):
         self.modelMatrix = matrix
 
     def display(self):
+        GL.glClearColor(0, 0, 0, 1)
         GL.glUseProgram(self.shaderProgram)
         GL.glBindVertexArray(self.vao)
 
         # Set the model matrix uniform
-        modelLoc = GL.glGetUniformLocation(self.shaderProgram, "uniform")
+        modelLoc = GL.glGetUniformLocation(self.shaderProgram, "MVP")
         GL.glUniformMatrix4fv(modelLoc, 1, GL.GL_FALSE, glm.value_ptr(self.modelMatrix))
 
         # Draw the object
-        GL.glDrawArrays(GL.GL_TRIANGLES, 0, len(self.vertices)//2)
+        GL.glDrawArrays(GL.GL_TRIANGLES, 0, 36)
 
         GL.glBindVertexArray(0)
         GL.glUseProgram(0)

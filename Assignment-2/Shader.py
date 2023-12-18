@@ -7,7 +7,7 @@ def vertShader():
     uniform mat4 MVP;
     void main()
     {
-        gl_Position = MVP * vec4(position, 1.0);
+        gl_Position = MVP * position;
         theColour = colour;
     }
     """
@@ -20,6 +20,6 @@ def fragShader():
     out vec4 outputColour;
     void main()
     {
-        outputColour = vec4(theColour, 1.0);
+        outputColour = theColour;
     }
     """
