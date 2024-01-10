@@ -1,6 +1,5 @@
 import glm
 
-
 class Scene:
     def __init__(self, objects, camera_position, camera_target, camera_up, fov, aspect, near, far):
         self.objects = objects
@@ -22,6 +21,6 @@ class Scene:
 
         for obj in self.objects:
             # Combine model, view, and projection matrices
-            MVP = projectionMatrix * viewMatrix * obj.modelMatrix
-            obj.transform(MVP)
+            model = projectionMatrix * viewMatrix * obj.modelMatrix
+            obj.transform(model)
             obj.display()

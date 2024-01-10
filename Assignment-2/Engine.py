@@ -26,8 +26,8 @@ class Object3D:
         # Vertex attribute
         GL.glEnableVertexAttribArray(0)
         GL.glEnableVertexAttribArray(1)
-        GL.glVertexAttribPointer(0, 4, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
-        GL.glVertexAttribPointer(1, 4, GL.GL_FLOAT, GL.GL_FALSE, 0, ctypes.c_void_p(576))
+        GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, GL.GL_FALSE, 6*ctypes.sizeof(GL.GLfloat), ctypes.c_void_p(0))
+        GL.glVertexAttribPointer(1, 3, GL.GL_FLOAT, GL.GL_FALSE, 6*ctypes.sizeof(GL.GLfloat), ctypes.c_void_p(3*ctypes.sizeof(GL.GLfloat)))
 
 
         # Unbind VAO
@@ -44,11 +44,11 @@ class Object3D:
         GL.glBindVertexArray(self.vao)
 
         # Set the model matrix uniform
-        modelLoc = GL.glGetUniformLocation(self.shaderProgram, "MVP")
+        modelLoc = GL.glGetUniformLocation(self.shaderProgram, "model")
         GL.glUniformMatrix4fv(modelLoc, 1, GL.GL_FALSE, glm.value_ptr(self.modelMatrix))
 
         # Draw the object
-        GL.glDrawArrays(GL.GL_TRIANGLES, 0, 36)
+        GL.glDrawArrays(GL.GL_TRIANGLES, 0, len(self.vertices)//6)
 
         GL.glBindVertexArray(0)
         GL.glUseProgram(0)
