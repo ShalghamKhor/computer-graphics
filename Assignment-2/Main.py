@@ -1,144 +1,137 @@
 import sdl2
-from OpenGL.GL import *
-import ctypes
 import sdl2.ext
-from OpenGL import GL
-from OpenGL.GL import shaders
-from sdl2 import video
+from OpenGL.GL import *
+import numpy as np
 import glm
-import cube
-import Shader
-from Engine import Object3D
-from Scene import Scene
+import OpenGL.GL as gl
+import numpy as np
+from cube import vertices
+import math
+from Enigine import Object3D
+from Scene import Camera, Scene
 
+
+def main():
+    sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO)
+    sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MAJOR_VERSION, 3)
+    sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_MINOR_VERSION, 3)
+    sdl2.SDL_GL_SetAttribute(sdl2.SDL_GL_CONTEXT_PROFILE_MASK, sdl2.SDL_GL_CONTEXT_PROFILE_CORE)
+
+    window = sdl2.SDL_CreateWindow(b"OpenGL Window",
+                                sdl2.SDL_WINDOWPOS_UNDEFINED,
+                                sdl2.SDL_WINDOWPOS_UNDEFINED, 800, 600,
+                                sdl2.SDL_WINDOW_OPENGL)
+
+    glcontext = sdl2.SDL_GL_CreateContext(window)
+    glEnable(GL_DEPTH_TEST)
+    
+    # Load and create shader programs
+    vertex_shader = load_shaders("shaders/vertex.tx")
+    fragment_shader = load_shaders("shaders/fragment.txt")
+    shader_program = create_shader_program(vertex_shader, fragment_shader)
+ 
+    vertices_data = np.array(vertices, dtype=np.float32) # vertex data
+
+    # instance of 3d cube
+    object1 = Object3D(vertices_data, shader_program, 0.20)
+    object1.transform(glm.translate(glm.mat4(1), glm.vec3(0, 1, -8)))  # transformation for the first cube
+
+    object2 = Object3D(vertices_data, shader_program, 0.40)
+    object2.transform(glm.translate(glm.mat4(1), glm.vec3(0, 2, -6)))  # transformation for the second cube
+
+    object3 = Object3D(vertices_data, shader_program, 0.30)
+    object3.transform(glm.translate(glm.mat4(1), glm.vec3(-1, 0, -7)))  # transformation for the third cube
+
+   
+   
+    # Initialize the camera
+    camera = Camera()
+    center_x = (object1.model_matrix[3][0] + object2.model_matrix[3][0] + object3.model_matrix[3][0]) / 3
+    center_y = (object1.model_matrix[3][1] + object2.model_matrix[3][1] + object3.model_matrix[3][1]) / 3
+    center_z = (object1.model_matrix[3][2] + object2.model_matrix[3][2] + object3.model_matrix[3][2]) / 3
+
+    # cameras target to the calculated center
+    camera.set_target(glm.vec3(center_x, center_y, center_z))
+
+    # cameras initial position
+    camera_distance = 10.0
+    camera_x = center_x
+    camera_y = center_y + camera_distance
+    camera_z = center_z
+
+    camera.set_position(glm.vec3(camera_x, camera_y, camera_z))
+    camera.set_up_vector(glm.vec3(0.0, 1.0, 0.0))
+    camera.set_perspective(45, 800/600, 0.1, 60)
+
+    # create the scene for the 3 cubes
+    scene = Scene([object1, object2, object3], camera)
+    
+
+ 
+    running = True
+    angle = 0
+    rotation_increament = 0.005
+    while running:
+        events = sdl2.ext.get_events()
+        for event in events:
+            if event.type == sdl2.SDL_QUIT:
+                running = False
+
+        # clear the screen
+        gl.glClearColor(0.0, 0.0, 0.0, 1.0)
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+
+        angle += rotation_increament 
+        camera_x = center_x + camera_distance * math.sin(angle)
+        camera_z = center_z + camera_distance * math.cos(angle)
+        camera.set_position(glm.vec3(camera_x, camera_y, camera_z))
+
+        scene.display()
+
+        # Swap the window buffers
+        sdl2.SDL_GL_SwapWindow(window)
+
+    # clean up
+    sdl2.SDL_GL_DeleteContext(glcontext)
+    sdl2.ext.quit()
+
+def load_shaders(path):
+    with open(path, 'r') as file:
+        return file.read()
+
+# compile shaders
 def compile_shader(source, shader_type):
-    shader = glCreateShader(shader_type)
-    glShaderSource(shader, source)
-    glCompileShader(shader)
+    shader = gl.glCreateShader(shader_type)
+    gl.glShaderSource(shader, source)
+    gl.glCompileShader(shader)
 
-    if glGetShaderiv(shader, GL_COMPILE_STATUS) != GL_TRUE:
-        raise RuntimeError(glGetShaderInfoLog(shader))
+    # Check for errors
+    result = gl.glGetShaderiv(shader, gl.GL_COMPILE_STATUS)
+    if not result:
+        raise RuntimeError(gl.glGetShaderInfoLog(shader).decode())
 
     return shader
 
-def create_shader_program(vertex_src, fragment_src):
-    vertex_shader = compile_shader(vertex_src, GL_VERTEX_SHADER)
-    fragment_shader = compile_shader(fragment_src, GL_FRAGMENT_SHADER)
+# Linking shaders
+def create_shader_program(vertex_source, fragment_source):
+    vertex_shader = compile_shader(vertex_source, gl.GL_VERTEX_SHADER)
+    fragment_shader = compile_shader(fragment_source, gl.GL_FRAGMENT_SHADER)
 
-    shader_program = glCreateProgram()
-    glAttachShader(shader_program, vertex_shader)
-    glAttachShader(shader_program, fragment_shader)
-    glLinkProgram(shader_program)
+    program = gl.glCreateProgram()
+    gl.glAttachShader(program, vertex_shader)
+    gl.glAttachShader(program, fragment_shader)
+    gl.glLinkProgram(program)
 
-    if glGetProgramiv(shader_program, GL_LINK_STATUS) != GL_TRUE:
-        raise RuntimeError(glGetProgramInfoLog(shader_program))
+    if not gl.glGetProgramiv(program, gl.GL_LINK_STATUS):
+        raise RuntimeError(gl.glGetProgramInfoLog(program).decode())
 
-    glDeleteShader(vertex_shader)
-    glDeleteShader(fragment_shader)
+    gl.glDetachShader(program, vertex_shader)
+    gl.glDetachShader(program, fragment_shader)
+    gl.glDeleteShader(vertex_shader)
+    gl.glDeleteShader(fragment_shader)
 
-    return shader_program
-
-
-vertex_shader = """
-#version 330 core
-layout (location = 0) in vec3 aPos;   // Vertex position
-layout (location = 1) in vec3 aColor; // Vertex color
-
-out vec3 ourColor; // Output color to the fragment shader
-
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
-
-void main()
-{
-    gl_Position = projection * view * model * vec4(aPos, 1.0);
-    ourColor = aColor;
-}
-"""
+    return program
 
 
-fragment_shader = """
-#version 330 core
-out vec4 FragColor;
-
-in vec3 ourColor;
-
-void main()
-{
-    FragColor = vec4(ourColor, 1.0);
-}
-"""
-# Initialize SDL2
-sdl2.ext.init()
-
-# Create an SDL2 window with OpenGL context
-window = sdl2.SDL_CreateWindow(b"3D Scene", sdl2.SDL_WINDOWPOS_UNDEFINED,
-                               sdl2.SDL_WINDOWPOS_UNDEFINED, 800, 600, sdl2.SDL_WINDOW_OPENGL)
-
-# Set OpenGL context attributes
-video.SDL_GL_SetAttribute(video.SDL_GL_CONTEXT_MAJOR_VERSION, 3)
-video.SDL_GL_SetAttribute(video.SDL_GL_CONTEXT_MINOR_VERSION, 3)
-video.SDL_GL_SetAttribute(video.SDL_GL_CONTEXT_PROFILE_MASK, video.SDL_GL_CONTEXT_PROFILE_CORE)
-
-# Create the OpenGL context
-context = sdl2.SDL_GL_CreateContext(window)
-GL.glEnable(GL.GL_DEPTH_TEST)
-
-# Initialize GLEW (if you're using GLEW)
-# import OpenGL.GLEW as GLEW
-# GLEW.glewInit()
-
-# Ensure glCreateShader is available
-if not GL.glCreateShader:
-    raise Exception("glCreateShader function not available")
-
-# Load and compile shaders
-"""
-vertex_shader_code = Shader.vertShader()
-fragment_shader_code = Shader.fragShader()
-
-vertex_shader = shaders.compileShader(vertex_shader_code, GL.GL_VERTEX_SHADER)
-fragment_shader = shaders.compileShader(fragment_shader_code, GL.GL_FRAGMENT_SHADER)
-
-# Link the shader program
-shader_program = shaders.compileProgram(vertex_shader, fragment_shader)
-"""
-shader_program = create_shader_program(vertex_shader, fragment_shader)
-
-
-# Cube vertices
-vertex = cube.cube_vertices
-
-# Create Object3D instance
-objec1 = Object3D(vertex, shader_program)
-
-# Camera settings
-camera_position = glm.vec3(4, 3, 3)
-camera_target = glm.vec3(0, 0, 0)
-camera_up = glm.vec3(0, 1, 0)
-fov = 45.0
-aspect_ratio = 800 / 600
-near = 0.1
-far = 100.0
-
-# Create the scene
-scene = Scene([objec1], camera_position, camera_target, camera_up, fov, aspect_ratio, near, far)
-
-# Main loop
-running = True
-while running:
-    events = sdl2.ext.get_events()
-    for event in events:
-        if event.type == sdl2.SDL_QUIT:
-            running = False
-    GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
-    scene.display()
-
-    sdl2.SDL_GL_SwapWindow(window)
-    sdl2.SDL_Delay(10)
-
-# Cleanup
-sdl2.SDL_GL_DeleteContext(context)
-sdl2.SDL_DestroyWindow(window)
-sdl2.ext.quit()
+if __name__ == "__main__":
+    main()
