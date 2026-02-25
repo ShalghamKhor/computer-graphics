@@ -1,0 +1,12 @@
+#version 330 core
+layout(location = 0) in vec2 aPos;    // vertex position
+layout(location = 1) in vec2 center; // center of the quad
+layout(location = 2) in float size;  // size of the quad
+
+out vec2 fragCoord; 
+
+void main() {
+    vec2 scaledPos = aPos * size + center; // Scale and translate quad
+    gl_Position = vec4(scaledPos, 0.0, 1.0);
+    fragCoord = aPos * 0.5 + vec2(0.5); 
+}

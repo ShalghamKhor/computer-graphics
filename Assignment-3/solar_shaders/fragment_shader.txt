@@ -1,0 +1,41 @@
+#version 330 core
+    in vec3 fragPos;
+    in vec3 normalDir;
+    in vec3 localCoords;
+
+    out vec4 color;
+
+    uniform vec3 lightPos;
+    uniform vec3 viewPos;
+    uniform vec3 objectColor;
+    uniform float specularStrength;
+    uniform float shininess;
+
+    void main() {
+        if (length(fragPos - lightPos) < 2.1) { // ~sun radius after scale
+            color = vec4(objectColor, 1.0);
+            return;
+            }
+        // ambient
+        float ambientStrength = 0.1;
+        vec3 ambient = ambientStrength * objectColor;
+
+        // diffuse
+        vec3 lightDir = normalize(lightPos - fragPos);
+        float diff = max(dot(normalize(normalDir), lightDir), 0.0);
+        vec3 diffuse = diff * objectColor;
+
+        // specular
+        vec3 viewDir = normalize(viewPos - fragPos);
+        vec3 reflectDir = reflect(-lightDir, normalize(normalDir));
+        float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+        vec3 specular = specularStrength * spec * vec3(1.0);
+
+        // urface detail
+        float stripes = abs(sin(localCoords.x * 10.0) + cos(localCoords.z * 10.0));
+        vec3 surfaceDetail = mix(objectColor, vec3(1.0, 1.0, 1.0), stripes * 0.3);
+
+        // combine results
+        vec3 result = ambient + diffuse * surfaceDetail + specular;
+        color = vec4(result, 1.0);
+    }

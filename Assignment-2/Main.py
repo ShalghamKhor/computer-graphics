@@ -70,7 +70,7 @@ def main():
  
     running = True
     angle = 0
-    rotation_increament = 0.005
+    rotation_increament = 0.0001
     while running:
         events = sdl2.ext.get_events()
         for event in events:

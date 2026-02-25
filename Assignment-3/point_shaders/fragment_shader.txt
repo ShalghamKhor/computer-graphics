@@ -1,0 +1,13 @@
+#version 330 core
+in vec2 fragCoord;
+out vec4 FragColor;
+
+uniform vec3 color;
+
+void main() {
+    float dist = distance(fragCoord, vec2(0.5));
+    float alpha = 1.0 - smoothstep(0.45, 0.5, dist);
+    vec3 centerColor = vec3(1.0, 0.0, 0.0); // Highlight center
+    vec3 finalColor = mix(centerColor, color, dist / 0.5);
+    FragColor = vec4(finalColor, alpha);
+}
