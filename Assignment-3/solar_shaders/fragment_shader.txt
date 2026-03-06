@@ -10,30 +10,20 @@
     uniform vec3 objectColor;
     uniform float specularStrength;
     uniform float shininess;
-    uniform bool hasTexture;
-    uniform sampler2D planetTexture;
 
     void main() {
         if (length(fragPos - lightPos) < 2.1) { // ~sun radius after scale
             color = vec4(objectColor, 1.0);
             return;
             }
-        vec3 baseColor = objectColor;
-        if (hasTexture) {
-            vec3 n = normalize(localCoords);
-            float u = atan(n.z, n.x) / (2.0 * 3.14159265359) + 0.5;
-            float v = asin(clamp(n.y, -1.0, 1.0)) / 3.14159265359 + 0.5;
-            baseColor = texture(planetTexture, vec2(u, v)).rgb;
-        }
-
         // ambient
         float ambientStrength = 0.1;
-        vec3 ambient = ambientStrength * baseColor;
+        vec3 ambient = ambientStrength * objectColor;
 
         // diffuse
         vec3 lightDir = normalize(lightPos - fragPos);
         float diff = max(dot(normalize(normalDir), lightDir), 0.0);
-        vec3 diffuse = diff * baseColor;
+        vec3 diffuse = diff * objectColor;
 
         // specular
         vec3 viewDir = normalize(viewPos - fragPos);
@@ -43,7 +33,7 @@
 
         // urface detail
         float stripes = abs(sin(localCoords.x * 10.0) + cos(localCoords.z * 10.0));
-        vec3 surfaceDetail = mix(baseColor, vec3(1.0, 1.0, 1.0), stripes * 0.15);
+        vec3 surfaceDetail = mix(objectColor, vec3(1.0, 1.0, 1.0), stripes * 0.3);
 
         // combine results
         vec3 result = ambient + diffuse * surfaceDetail + specular;

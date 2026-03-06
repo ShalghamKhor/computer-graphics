@@ -4,7 +4,6 @@ from OpenGL.GL import *
 from OpenGL.GL.shaders import compileProgram, compileShader
 import glm
 from math import sin, cos
-import numpy as np
 from sphere import generateSphere
 from solar_Engine import Object3D
 
@@ -13,46 +12,6 @@ from solar_Engine import Object3D
 def load_shaders(path):
     with open(path, 'r') as file:
         return file.read()
-
-
-def _build_texture(base_rgb, accent_rgb, bands=10, noise=0.08, w=512, h=256, seed=0):
-    rng = np.random.default_rng(seed)
-    u = np.linspace(0.0, 1.0, w, dtype=np.float32)[None, :]
-    v = np.linspace(0.0, 1.0, h, dtype=np.float32)[:, None]
-    wave = 0.5 + 0.5 * np.sin((v * bands + u * (bands * 0.35)) * 2.0 * np.pi)
-    grain = rng.normal(0.0, noise, size=(h, w)).astype(np.float32)
-    blend = np.clip(wave + grain, 0.0, 1.0)[..., None]
-    base = np.array(base_rgb, dtype=np.float32).reshape(1, 1, 3)
-    accent = np.array(accent_rgb, dtype=np.float32).reshape(1, 1, 3)
-    tex = base * (1.0 - blend) + accent * blend
-    return (np.clip(tex, 0.0, 1.0) * 255).astype(np.uint8)
-
-
-def _build_earth_texture(w=512, h=256, seed=7):
-    rng = np.random.default_rng(seed)
-    u = np.linspace(0.0, 1.0, w, dtype=np.float32)[None, :]
-    v = np.linspace(0.0, 1.0, h, dtype=np.float32)[:, None]
-    continents = (
-        np.sin(8.0 * np.pi * u + 3.0 * np.pi * v)
-        + 0.7 * np.sin(14.0 * np.pi * u - 5.0 * np.pi * v)
-        + 0.35 * np.sin(22.0 * np.pi * (u + v))
-    )
-    continents += rng.normal(0.0, 0.28, size=(h, w)).astype(np.float32)
-    mask = continents > 0.4
-
-    ocean = np.array([0.07, 0.23, 0.62], dtype=np.float32).reshape(1, 1, 3)
-    land = np.array([0.14, 0.52, 0.20], dtype=np.float32).reshape(1, 1, 3)
-    mountain = np.array([0.50, 0.42, 0.30], dtype=np.float32).reshape(1, 1, 3)
-
-    elev = np.clip(continents, -1.0, 1.8)
-    land_mix = np.clip((elev - 0.4) / 1.4, 0.0, 1.0)[..., None]
-    land_color = land * (1.0 - land_mix) + mountain * land_mix
-
-    tex = np.tile(ocean, (h, w, 1))
-    tex[mask] = land_color[mask]
-    clouds = (rng.random((h, w)) > 0.985).astype(np.float32)[..., None]
-    tex = np.clip(tex + clouds * 0.25, 0.0, 1.0)
-    return (tex * 255).astype(np.uint8)
 
 def solar_run():
     pygame.init()
@@ -77,18 +36,12 @@ def solar_run():
 
     shader_program = compileProgram(compileShader(vertex_shader, GL_VERTEX_SHADER), compileShader(fragment_shader, GL_FRAGMENT_SHADER), validate=False)
     vertices_data = generateSphere(64, 64)
-    earth_texture = _build_earth_texture()
-    moon_texture = _build_texture((0.48, 0.48, 0.50), (0.66, 0.66, 0.68), bands=18, noise=0.12, seed=2)
-    mars_texture = _build_texture((0.55, 0.26, 0.18), (0.76, 0.45, 0.30), bands=12, noise=0.11, seed=3)
-    jupiter_texture = _build_texture((0.64, 0.49, 0.36), (0.82, 0.67, 0.52), bands=36, noise=0.05, seed=4)
-    saturn_texture = _build_texture((0.63, 0.56, 0.43), (0.80, 0.72, 0.58), bands=30, noise=0.05, seed=5)
-
     sun = Object3D(vertices_data, shader_program, scaling_factor=2.0, color=glm.vec3(1.0, 1.0, 0.0), specular_strength=0.0, shininess=0.0)
-    earth = Object3D(vertices_data, shader_program, scaling_factor=1.0, color=glm.vec3(0.0, 0.0, 1.0), specular_strength=0.5, shininess=32.0, texture_data=earth_texture)
-    moon = Object3D(vertices_data, shader_program, scaling_factor=0.5, color=glm.vec3(0.6, 0.6, 0.6), specular_strength=0.3, shininess=16.0, texture_data=moon_texture)
-    mars = Object3D(vertices_data, shader_program, scaling_factor=0.8, color=glm.vec3(1.0, 0.5, 0.5), specular_strength=0.4, shininess=24.0, texture_data=mars_texture)
-    jupiter = Object3D(vertices_data, shader_program, scaling_factor=1.5, color=glm.vec3(1.0, 0.8, 0.6), specular_strength=0.6, shininess=40.0, texture_data=jupiter_texture)
-    saturn = Object3D(vertices_data, shader_program, scaling_factor=1.3, color=glm.vec3(0.8, 0.7, 0.5), specular_strength=0.5, shininess=36.0, texture_data=saturn_texture)
+    earth = Object3D(vertices_data, shader_program, scaling_factor=1.0, color=glm.vec3(0.0, 0.0, 1.0), specular_strength=0.5, shininess=32.0)
+    moon = Object3D(vertices_data, shader_program, scaling_factor=0.5, color=glm.vec3(0.6, 0.6, 0.6), specular_strength=0.3, shininess=16.0)
+    mars = Object3D(vertices_data, shader_program, scaling_factor=0.8, color=glm.vec3(1.0, 0.5, 0.5), specular_strength=0.4, shininess=24.0)
+    jupiter = Object3D(vertices_data, shader_program, scaling_factor=1.5, color=glm.vec3(1.0, 0.8, 0.6), specular_strength=0.6, shininess=40.0)
+    saturn = Object3D(vertices_data, shader_program, scaling_factor=1.3, color=glm.vec3(0.8, 0.7, 0.5), specular_strength=0.5, shininess=36.0)
 
     camera = glm.lookAt(glm.vec3(0, 30, 80), glm.vec3(0, 0, 0), glm.vec3(0, 1, 0))
     projection = glm.perspective(glm.radians(45.0), 1024 / 768, 0.1, 200.0)
