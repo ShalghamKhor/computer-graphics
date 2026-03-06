@@ -2,17 +2,19 @@ from pygame.locals import *
 from OpenGL.GL import *
 import glm
 import ctypes
+import numpy as np
 
 
 
 class Object3D:
-    def __init__(self, vertices, shader_program, scaling_factor, color, specular_strength, shininess):
+    def __init__(self, vertices, shader_program, scaling_factor, color, specular_strength, shininess, texture_data=None):
         self.vertices = vertices
         self.shader_program = shader_program
         self.scaling_factor = scaling_factor
         self.color = color
         self.specular_strength = specular_strength
         self.shininess = shininess
+        self.texture_id = None
         stride = 6 * 4
 
         self.vao = glGenVertexArrays(1)
@@ -32,6 +34,20 @@ class Object3D:
 
         glBindBuffer(GL_ARRAY_BUFFER, 0)
         glBindVertexArray(0)
+
+        if texture_data is not None:
+            self.texture_id = glGenTextures(1)
+            glBindTexture(GL_TEXTURE_2D, self.texture_id)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+
+            texture_data = np.ascontiguousarray(texture_data, dtype=np.uint8)
+            height, width, _ = texture_data.shape
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, texture_data)
+            glGenerateMipmap(GL_TEXTURE_2D)
+            glBindTexture(GL_TEXTURE_2D, 0)
 
     def transform(self, transformation_matrix):
         self.model_matrix = glm.mat4(1.0)
@@ -68,8 +84,18 @@ class Object3D:
         light_pos_loc = glGetUniformLocation(self.shader_program, "lightPos")
         glUniform3fv(light_pos_loc, 1, glm.value_ptr(light_position))
 
+        has_texture_loc = glGetUniformLocation(self.shader_program, "hasTexture")
+        glUniform1i(has_texture_loc, 1 if self.texture_id is not None else 0)
+        if self.texture_id is not None:
+            glActiveTexture(GL_TEXTURE0)
+            glBindTexture(GL_TEXTURE_2D, self.texture_id)
+            texture_loc = glGetUniformLocation(self.shader_program, "planetTexture")
+            glUniform1i(texture_loc, 0)
+
 
         glDrawArrays(GL_TRIANGLES, 0, len(self.vertices) // 6)
 
+        if self.texture_id is not None:
+            glBindTexture(GL_TEXTURE_2D, 0)
         glBindVertexArray(0)
         glUseProgram(0)
